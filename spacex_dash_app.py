@@ -13,6 +13,7 @@ min_payload = spacex_df['Payload Mass (kg)'].min()
 
 # Generate list of distinct launch sites
 launch_site_list = list(spacex_df['Launch Site'].unique())
+launch_site_list = ['All Sites'] + launch_site_list
 
 # Create a dash application
 app = dash.Dash(__name__)
@@ -25,14 +26,11 @@ app.layout = html.Div(children=[html.H1('SpaceX Launch Records Dashboard',
                                 # The default select value is for ALL sites
                                 # dcc.Dropdown(id='site-dropdown',...)
                                 dcc.Dropdown(id='site_dropdown',
-                                options=[
-                                    {'label': 'All Sites', 'value': 'All'},
-                                    {'label': launch_site_list[0], 'value': launch_site_list[0]},
-                                    {'label': launch_site_list[1], 'value': launch_site_list[1]},
-                                    {'label': launch_site_list[2], 'value': launch_site_list[2]},
-                                    {'label': launch_site_list[3], 'value': launch_site_list[3]},
-                                ],
-                                value='All',
+                                options=
+                                    # Use a list comprehension to create the options
+                                    [{'label':elem, 'value':elem} for elem in launch_site_list]
+                                ,
+                                value=launch_site_list[0],
                                 placeholder="Select a Launch Site",
                                 searchable=True
                                 ),
@@ -65,10 +63,10 @@ app.layout = html.Div(children=[html.H1('SpaceX Launch Records Dashboard',
                Input(component_id='site_dropdown',component_property='value'))
 def create_outcome_graph(launch_site_value):
     # Select data based on the launch_site_value
-    if launch_site_value == 'All':
+    if launch_site_value == launch_site_list[0]:
         selected_df = spacex_df.groupby('Launch Site',as_index=False).sum()
         fig = px.pie(selected_df, values='class', names='Launch Site',
-             title=f'Total Booster Landing Success for {launch_site_value} Sites')
+             title=f'Total Booster Landing Success for {launch_site_value}')
     else:
         selected_df = pd.DataFrame(spacex_df[spacex_df['Launch Site']==launch_site_value]['class'].value_counts()).reset_index()
         selected_df.rename(columns={"index": "outcome", "class": "outcome_total"}, inplace=True)
@@ -95,11 +93,11 @@ def create_outcome_graph(launch_site_value):
                Input(component_id='payload-slider',component_property='value'))
 def create_payload_graph(launch_site_value, payload_range):
     # Select data based on the launch_site_value
-    if launch_site_value == 'All':
+    if launch_site_value == launch_site_list[0]:
         selected_df = spacex_df[(spacex_df['Payload Mass (kg)'] >= payload_range[0]) & (spacex_df['Payload Mass (kg)']<=payload_range[1])]
 
         fig = px.scatter(selected_df, x='Payload Mass (kg)', y='class', color='Booster Version Category',
-             title=f'Correlation between Payload and Success for {launch_site_value} Sites')
+             title=f'Correlation between Payload and Success for {launch_site_value}')
     else:
         selected_df = spacex_df[(spacex_df['Payload Mass (kg)'] >= payload_range[0]) & (spacex_df['Payload Mass (kg)']<=payload_range[1]) \
             & (spacex_df['Launch Site']==launch_site_value)]
